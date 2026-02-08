@@ -24,6 +24,24 @@ impl ToolKind {
             ToolKind::Pinecone => "Pinecone",
         }
     }
+
+    pub fn sprite_path(&self) -> &'static str {
+        match self {
+            ToolKind::Pinecone => "items/pinecone.webp",
+        }
+    }
+
+    pub fn ground_size(&self) -> Vec2 {
+        match self {
+            ToolKind::Pinecone => Vec2::new(20.0, 20.0),
+        }
+    }
+
+    pub fn projectile_size(&self) -> Vec2 {
+        match self {
+            ToolKind::Pinecone => Vec2::new(16.0, 16.0),
+        }
+    }
 }
 
 /// Marker for items sitting on the ground.
@@ -72,6 +90,7 @@ pub fn bobble_items(
 pub fn pickup_tool(
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
+    asset_server: Res<AssetServer>,
     player_q: Query<(Entity, &Transform, Option<&HeldTool>), With<Player>>,
     ground_q: Query<(Entity, &Transform, &GroundItem)>,
 ) {
@@ -102,7 +121,7 @@ pub fn pickup_tool(
     if let Some(old_tool) = held {
         let old_kind = old_tool.0;
         commands.entity(player_entity).remove::<HeldTool>();
-        spawn_ground_item(&mut commands, old_kind, player_pos);
+        spawn_ground_item(&mut commands, &asset_server, old_kind, player_pos);
     }
 
     // Pick up new tool
@@ -113,6 +132,7 @@ pub fn pickup_tool(
 pub fn activate_tool(
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
+    asset_server: Res<AssetServer>,
     player_q: Query<(Entity, &Transform, &HeldTool), With<Player>>,
     enemies: Query<&Transform, With<Enemy>>,
 ) {
@@ -141,8 +161,8 @@ pub fn activate_tool(
 
             commands.spawn((
                 Sprite {
-                    color: ToolKind::Pinecone.color(),
-                    custom_size: Some(Vec2::new(10.0, 10.0)),
+                    image: asset_server.load(ToolKind::Pinecone.sprite_path()),
+                    custom_size: Some(ToolKind::Pinecone.projectile_size()),
                     ..default()
                 },
                 Transform::from_translation(player_pos.extend(0.0)),
@@ -165,6 +185,7 @@ const PINECONE_PROXIMITY_FUSE: f32 = 24.0; // detonate when this close to any en
 pub fn pinecone_fly(
     mut commands: Commands,
     time: Res<Time>,
+    asset_server: Res<AssetServer>,
     mut projectiles: Query<(Entity, &mut Transform, &mut PineconeProjectile)>,
     enemies: Query<(Entity, &Transform), (With<Enemy>, Without<PineconeProjectile>)>,
     mut damage_events: MessageWriter<DamageEvent>,
@@ -194,21 +215,21 @@ pub fn pinecone_fly(
             }
             // Land as a ground item instead of vanishing
             commands.entity(proj_entity).despawn();
-            spawn_ground_item(&mut commands, ToolKind::Pinecone, blast_pos);
+            spawn_ground_item(&mut commands, &asset_server, ToolKind::Pinecone, blast_pos);
         }
     }
 }
 
 /// Public entry point for spawning ground items from other modules.
-pub fn spawn_ground_item_pub(commands: &mut Commands, kind: ToolKind, pos: Vec2) {
-    spawn_ground_item(commands, kind, pos);
+pub fn spawn_ground_item_pub(commands: &mut Commands, asset_server: &AssetServer, kind: ToolKind, pos: Vec2) {
+    spawn_ground_item(commands, asset_server, kind, pos);
 }
 
-fn spawn_ground_item(commands: &mut Commands, kind: ToolKind, pos: Vec2) {
+fn spawn_ground_item(commands: &mut Commands, asset_server: &AssetServer, kind: ToolKind, pos: Vec2) {
     commands.spawn((
         Sprite {
-            color: kind.color(),
-            custom_size: Some(Vec2::new(12.0, 12.0)),
+            image: asset_server.load(kind.sprite_path()),
+            custom_size: Some(kind.ground_size()),
             ..default()
         },
         Transform::from_translation(pos.extend(0.0)),
@@ -221,8 +242,8 @@ fn spawn_ground_item(commands: &mut Commands, kind: ToolKind, pos: Vec2) {
     ));
 }
 
-pub fn spawn_ground_items(mut commands: Commands) {
+pub fn spawn_ground_items(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Drop a couple pinecones near spawn for testing
-    spawn_ground_item(&mut commands, ToolKind::Pinecone, Vec2::new(60.0, 30.0));
-    spawn_ground_item(&mut commands, ToolKind::Pinecone, Vec2::new(-80.0, 50.0));
+    spawn_ground_item(&mut commands, &asset_server, ToolKind::Pinecone, Vec2::new(60.0, 30.0));
+    spawn_ground_item(&mut commands, &asset_server, ToolKind::Pinecone, Vec2::new(-80.0, 50.0));
 }

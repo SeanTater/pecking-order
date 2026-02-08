@@ -470,13 +470,24 @@ Best fit for pure AI generation. Standalone images, no tiling or animation. Gene
 - lib.rs + integration tests, CI/CD pipeline
 - Verify: survive 5 waves of mixed ants and snakes
 
-**Sunday Afternoon: Feel**
-- Hit flash on damage
-- Knockback on peck and on player hit
-- Screenshake (small on peck, medium on player hit)
-- Death particles
-- Sound effects via jsfxr (peck, hit, death, pickup)
-- Verify: the test arena FEELS good with rectangles
+**Sunday Afternoon: Feel** ✅
+- Hit flash on damage (HDR white tint)
+- Knockback on peck and on player hit (exponential decay)
+- Screenshake (trauma-based, quadratic falloff)
+- Death particles (colored sprites, fade over 0.4s)
+- Pinecone proximity fuse + persists as ground item after blast
+- Sound effects deferred (no audio files yet)
+- Verify: the test arena FEELS good
+
+**Art Integration** ✅
+- Paper cutout style sprites generated via AI, hand-cut to WebP with transparency
+- Pip: standing, 2 walk frames, pecking sprite (shown on auto-peck)
+- Ants: 4 visual variants (plain, leaf, stick, blueberry)
+- Noodle (garden snake): slithering sprite
+- Pinecone: real sprite for ground items, projectiles, and HUD
+- Enemies flip to face player; Pip flips based on movement direction
+- Green background, HUD tool slot shows pinecone image
+- Full sprite sets cut for Biscuit (cat boss), Mango, Cashew, Gumbo, Jumbo, worms, scenery
 
 **Sunday Evening: Polish + Commit**
 - Pause menu (Escape → overlay → Resume/Quit)
@@ -484,7 +495,7 @@ Best fit for pure AI generation. Standalone images, no tiling or animation. Gene
 - Write/run pure logic tests
 - If time: second tool (Bottlecap Shield)
 
-**Weekend 1 exit criteria:** A single arena where you fight waves of two enemy types, pick up tools, and it feels satisfying to play — even with placeholder rectangles.
+**Weekend 1 exit criteria:** A single arena where you fight waves of two enemy types, pick up tools, and it feels satisfying to play. ✅ (achieved with real sprites!)
 
 ### Between Weekends — Art Sprint
 

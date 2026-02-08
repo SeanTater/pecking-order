@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 
 use crate::states::GameState;
-use super::enemy::Enemy;
+use super::enemy::{Enemy, DeathColor};
 use super::juice::{self, ScreenShake};
 use super::player::Player;
 
@@ -33,12 +33,13 @@ pub struct DamageEvent {
 }
 
 pub fn auto_peck(
-    mut peck_q: Query<(&Transform, &mut AutoPeck), With<Player>>,
+    mut commands: Commands,
+    mut peck_q: Query<(Entity, &Transform, &mut AutoPeck), With<Player>>,
     enemies: Query<(Entity, &Transform), With<Enemy>>,
     time: Res<Time>,
     mut damage_events: MessageWriter<DamageEvent>,
 ) {
-    let Ok((player_tf, mut peck)) = peck_q.single_mut() else {
+    let Ok((player_entity, player_tf, mut peck)) = peck_q.single_mut() else {
         return;
     };
 
@@ -65,6 +66,7 @@ pub fn auto_peck(
             target,
             amount: peck.damage,
         });
+        super::player::trigger_peck_flash(&mut commands, player_entity);
     }
 }
 
@@ -143,17 +145,18 @@ pub fn apply_damage(
 
 pub fn check_death(
     mut commands: Commands,
-    query: Query<(Entity, &Health, &Sprite, &Transform, Option<&Player>)>,
+    query: Query<(Entity, &Health, &Transform, Option<&Player>, Option<&DeathColor>)>,
     mut next_state: ResMut<NextState<GameState>>,
     mut shake: ResMut<ScreenShake>,
 ) {
-    for (entity, health, sprite, tf, is_player) in &query {
+    for (entity, health, tf, is_player, death_color) in &query {
         if health.current <= 0 {
             if is_player.is_some() {
                 next_state.set(GameState::MainMenu);
                 return;
             }
-            juice::spawn_death_particles(&mut commands, tf.translation.truncate(), sprite.color);
+            let color = death_color.map(|dc| dc.0).unwrap_or(Color::srgb(0.5, 0.5, 0.5));
+            juice::spawn_death_particles(&mut commands, tf.translation.truncate(), color);
             shake.add_trauma(0.1);
             commands.entity(entity).despawn();
         }

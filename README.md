@@ -4,7 +4,7 @@ A 2.5D action game about a lovesick Carolina wren on a quest to find his cockati
 
 ## Gameplay
 
-You play as a small, scrappy wren. Auto-peck enemies that get close, pick up tools for special abilities, and survive escalating waves. The catch: **you can only carry one tool at a time.** Every pickup is a tradeoff.
+You play as **Pip**, a small, scrappy Carolina wren. Auto-peck enemies that get close, pick up tools for special abilities, and survive escalating waves. The catch: **you can only carry one tool at a time.** Every pickup is a tradeoff.
 
 ### Controls
 
@@ -17,9 +17,18 @@ You play as a small, scrappy wren. Auto-peck enemies that get close, pick up too
 
 ### Tools
 
-- **Pinecone** — lobbed AoE projectile, consumed on use
+- **Pinecone** — lobbed AoE projectile that lands as a ground item after detonation (reusable!)
 
 More tools coming soon (Bottlecap Shield, Chicken Bone, Rubber Band, etc).
+
+### Characters
+
+- **Pip** — Carolina wren protagonist
+- **Mango** — cockatiel love interest
+- **Biscuit** — house cat, final boss
+- **Noodle** — garden snake
+- **Cashew** — chipmunk
+- **Gumbo & Jumbo** — frogs
 
 ## Building & Running
 
@@ -40,22 +49,35 @@ cargo test
 ```
 src/
 ├── main.rs           # App entry, plugin registration
+├── lib.rs            # Library root (for integration tests)
 ├── states.rs         # GameState enum (Loading, MainMenu, Playing, ...)
 ├── loading.rs        # Asset loading state
 ├── menu/             # Main menu UI
 ├── game/
 │   ├── mod.rs        # GamePlugin, player/camera/enemy/tool wiring
-│   ├── player.rs     # Player movement (8-directional)
+│   ├── player.rs     # Player movement, walk/peck animation
 │   ├── camera.rs     # Smooth camera follow
 │   ├── enemy.rs      # Enemy component + rush behavior
 │   ├── combat.rs     # Health, auto-peck, damage events, iframes
 │   ├── tools.rs      # Ground items, pickup/swap, pinecone projectile
-│   └── waves.rs      # WaveManager, wave data, spawning
+│   ├── waves.rs      # WaveManager, wave data, spawning
+│   └── juice.rs      # Hit flash, knockback, screenshake, death particles
 └── hud/
     ├── mod.rs        # HudPlugin
     ├── health.rs     # Heart display
     ├── tool_display.rs # Current tool icon
     └── wave_indicator.rs # "Wave N/M" text
+assets/
+├── pip/              # Wren sprites (standing, walking, pecking, pickup)
+├── ants/             # 4 ant variants (plain, leaf, stick, blueberry)
+├── noodle/           # Garden snake sprites
+├── biscuit/          # Cat boss sprites (stalk, pounce, dazed, heal, yarn)
+├── mango/            # Cockatiel walk cycle
+├── cashew/           # Chipmunk sprites
+├── gumbo/            # Frog sprites
+├── items/            # Pinecone, etc
+├── worms/            # Worm pickup sprites
+└── scenery/          # Flower decorations
 ```
 
 ## License

@@ -5,7 +5,7 @@ use std::f32::consts::TAU;
 
 use crate::states::GameState;
 use super::combat::Health;
-use super::enemy::{Enemy, RushBehavior};
+use super::enemy::{Enemy, DeathColor, RushBehavior};
 use super::tools;
 
 // ── Enemy types ──────────────────────────────────────────────────────
@@ -31,17 +31,32 @@ impl EnemyType {
         }
     }
 
-    pub fn color(&self) -> Color {
+    pub fn size(&self) -> Vec2 {
         match self {
-            EnemyType::Ant => Color::srgb(0.15, 0.1, 0.05),
-            EnemyType::GardenSnake => Color::srgb(0.2, 0.5, 0.15),
+            EnemyType::Ant => Vec2::new(20.0, 16.0),
+            EnemyType::GardenSnake => Vec2::new(48.0, 20.0),
         }
     }
 
-    pub fn size(&self) -> Vec2 {
+    const ANT_SPRITES: &[&'static str] = &[
+        "ants/ant.webp",
+        "ants/ant-with-leaf.webp",
+        "ants/ant-with-stick.webp",
+        "ants/ant-with-blueberry.webp",
+    ];
+
+    pub fn sprite_path(&self, index: usize) -> &'static str {
         match self {
-            EnemyType::Ant => Vec2::new(12.0, 12.0),
-            EnemyType::GardenSnake => Vec2::new(20.0, 10.0),
+            EnemyType::Ant => Self::ANT_SPRITES[index % Self::ANT_SPRITES.len()],
+            EnemyType::GardenSnake => "noodle/noodle-slithering.webp",
+        }
+    }
+
+    /// Color used for death particles.
+    pub fn color(&self) -> Color {
+        match self {
+            EnemyType::Ant => Color::srgb(0.45, 0.3, 0.15),
+            EnemyType::GardenSnake => Color::srgb(0.4, 0.6, 0.25),
         }
     }
 }
@@ -99,6 +114,7 @@ pub fn advance_waves(
     enemies: Query<&Enemy>,
     time: Res<Time>,
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
 ) {
     if manager.all_complete() {
         return;
@@ -106,12 +122,12 @@ pub fn advance_waves(
 
     // If we haven't spawned this wave yet, spawn it
     if !manager.spawned_current {
-        spawn_wave(&mut commands, &manager.waves[manager.current]);
+        spawn_wave(&mut commands, &asset_server, &manager.waves[manager.current]);
         // Drop a pinecone every other wave (starting wave 2)
         if manager.current > 0 && manager.current % 2 == 1 {
             let angle = (manager.current as f32) * 1.618 * TAU;
             let pos = Vec2::new(angle.cos(), angle.sin()) * 100.0;
-            tools::spawn_ground_item_pub(&mut commands, tools::ToolKind::Pinecone, pos);
+            tools::spawn_ground_item_pub(&mut commands, &asset_server, tools::ToolKind::Pinecone, pos);
         }
         manager.spawned_current = true;
         return;
@@ -133,7 +149,7 @@ pub fn advance_waves(
     manager.cooldown.reset();
 }
 
-fn spawn_wave(commands: &mut Commands, wave: &Wave) {
+fn spawn_wave(commands: &mut Commands, asset_server: &AssetServer, wave: &Wave) {
     let mut idx = 0;
     let total: usize = wave.groups.iter().map(|g| g.count).sum();
 
@@ -146,12 +162,13 @@ fn spawn_wave(commands: &mut Commands, wave: &Wave) {
             let et = &group.enemy_type;
             commands.spawn((
                 Sprite {
-                    color: et.color(),
+                    image: asset_server.load(et.sprite_path(idx)),
                     custom_size: Some(et.size()),
                     ..default()
                 },
                 Transform::from_translation(pos.extend(0.0)),
                 Enemy,
+                DeathColor(et.color()),
                 Health { current: et.health(), max: et.health() },
                 RushBehavior { speed: et.speed() },
                 DespawnOnExit(GameState::Playing),
