@@ -6,6 +6,7 @@ use std::f32::consts::TAU;
 use crate::states::GameState;
 use super::combat::Health;
 use super::enemy::{Enemy, RushBehavior};
+use super::tools;
 
 // ── Enemy types ──────────────────────────────────────────────────────
 
@@ -106,6 +107,12 @@ pub fn advance_waves(
     // If we haven't spawned this wave yet, spawn it
     if !manager.spawned_current {
         spawn_wave(&mut commands, &manager.waves[manager.current]);
+        // Drop a pinecone every other wave (starting wave 2)
+        if manager.current > 0 && manager.current % 2 == 1 {
+            let angle = (manager.current as f32) * 1.618 * TAU;
+            let pos = Vec2::new(angle.cos(), angle.sin()) * 100.0;
+            tools::spawn_ground_item_pub(&mut commands, tools::ToolKind::Pinecone, pos);
+        }
         manager.spawned_current = true;
         return;
     }

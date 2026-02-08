@@ -160,6 +160,8 @@ pub fn activate_tool(
     }
 }
 
+const PINECONE_PROXIMITY_FUSE: f32 = 24.0; // detonate when this close to any enemy
+
 pub fn pinecone_fly(
     mut commands: Commands,
     time: Res<Time>,
@@ -173,9 +175,15 @@ pub fn pinecone_fly(
         tf.translation.y += proj.direction.y * move_dist;
         proj.distance_left -= move_dist;
 
-        if proj.distance_left <= 0.0 {
-            // Explode — AoE damage
-            let blast_pos = tf.translation.truncate();
+        let blast_pos = tf.translation.truncate();
+
+        // Detonate on proximity to any enemy OR when out of range
+        let near_enemy = enemies.iter().any(|(_, etf)| {
+            blast_pos.distance(etf.translation.truncate()) <= PINECONE_PROXIMITY_FUSE
+        });
+
+        if near_enemy || proj.distance_left <= 0.0 {
+            // AoE damage to all enemies in blast radius
             for (enemy_entity, enemy_tf) in &enemies {
                 if blast_pos.distance(enemy_tf.translation.truncate()) <= PINECONE_BLAST_RADIUS {
                     damage_events.write(DamageEvent {
@@ -184,9 +192,16 @@ pub fn pinecone_fly(
                     });
                 }
             }
+            // Land as a ground item instead of vanishing
             commands.entity(proj_entity).despawn();
+            spawn_ground_item(&mut commands, ToolKind::Pinecone, blast_pos);
         }
     }
+}
+
+/// Public entry point for spawning ground items from other modules.
+pub fn spawn_ground_item_pub(commands: &mut Commands, kind: ToolKind, pos: Vec2) {
+    spawn_ground_item(commands, kind, pos);
 }
 
 fn spawn_ground_item(commands: &mut Commands, kind: ToolKind, pos: Vec2) {

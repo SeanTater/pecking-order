@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::states::GameState;
 use super::enemy::Enemy;
+use super::juice::{self, ScreenShake};
 use super::player::Player;
 
 #[derive(Component)]
@@ -108,27 +109,52 @@ pub fn enemy_contact_damage(
 }
 
 pub fn apply_damage(
+    mut commands: Commands,
     mut events: MessageReader<DamageEvent>,
-    mut health_q: Query<&mut Health>,
+    mut health_q: Query<(&mut Health, &Sprite, &Transform, Option<&Player>)>,
+    player_q: Query<&Transform, With<Player>>,
+    mut shake: ResMut<ScreenShake>,
 ) {
+    let player_pos = player_q.single().map(|t| t.translation.truncate()).unwrap_or(Vec2::ZERO);
+
     for ev in events.read() {
-        if let Ok(mut health) = health_q.get_mut(ev.target) {
+        if let Ok((mut health, sprite, tf, is_player)) = health_q.get_mut(ev.target) {
             health.current -= ev.amount;
+
+            // Hit flash
+            juice::trigger_flash(&mut commands, ev.target, sprite.color);
+
+            // Knockback — away from player for enemies, away from enemy center for player
+            let pos = tf.translation.truncate();
+            if is_player.is_some() {
+                // Player got hit — knock away from center of enemies (approximate with zero for now)
+                let kb_dir = (pos - Vec2::ZERO).normalize_or_zero();
+                juice::trigger_knockback(&mut commands, ev.target, kb_dir, 200.0);
+                shake.add_trauma(0.3);
+            } else {
+                // Enemy got hit — knock away from player
+                let kb_dir = (pos - player_pos).normalize_or_zero();
+                juice::trigger_knockback(&mut commands, ev.target, kb_dir, 150.0);
+                shake.add_trauma(0.05);
+            }
         }
     }
 }
 
 pub fn check_death(
     mut commands: Commands,
-    query: Query<(Entity, &Health, Option<&Player>)>,
+    query: Query<(Entity, &Health, &Sprite, &Transform, Option<&Player>)>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut shake: ResMut<ScreenShake>,
 ) {
-    for (entity, health, is_player) in &query {
+    for (entity, health, sprite, tf, is_player) in &query {
         if health.current <= 0 {
             if is_player.is_some() {
                 next_state.set(GameState::MainMenu);
                 return;
             }
+            juice::spawn_death_particles(&mut commands, tf.translation.truncate(), sprite.color);
+            shake.add_trauma(0.1);
             commands.entity(entity).despawn();
         }
     }

@@ -3,6 +3,7 @@
 mod camera;
 pub mod combat;
 pub mod enemy;
+pub mod juice;
 pub mod player;
 pub mod tools;
 pub mod waves;
@@ -17,7 +18,8 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<DamageEvent>()
+        app.init_resource::<juice::ScreenShake>()
+            .add_message::<DamageEvent>()
             .add_systems(OnEnter(GameState::Playing), (setup_playing, waves::init_waves, tools::spawn_ground_items).chain())
             .add_systems(OnExit(GameState::Playing), waves::cleanup_waves)
             .add_systems(
@@ -28,6 +30,7 @@ impl Plugin for GamePlugin {
                     combat::apply_damage,
                     combat::check_death,
                     (tools::bobble_items, tools::pickup_tool, tools::activate_tool, tools::pinecone_fly),
+                    (juice::apply_hit_flash, juice::apply_knockback, juice::apply_screenshake, juice::update_death_particles),
                     back_to_menu,
                 )
                     .chain()

@@ -1,6 +1,6 @@
 use bevy::{app::AppExit, prelude::*};
 
-use crate::states::GameState;
+use pecking_order::states::GameState;
 
 pub struct MainMenuPlugin;
 

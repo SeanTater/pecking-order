@@ -1,9 +1,8 @@
 mod loading;
 mod menu;
-mod states;
 
 use bevy::prelude::*;
-use states::GameState;
+use pecking_order::states::GameState;
 
 fn main() {
     App::new()
