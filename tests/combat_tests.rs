@@ -41,3 +41,29 @@ fn tool_color_is_distinct() {
     // Just verify it doesn't panic and returns something
     let _color = ToolKind::Pinecone.color();
 }
+
+#[test]
+fn health_bar_color_gradient() {
+    use pecking_order::game::healthbar::health_color;
+
+    // Full health should be greenish
+    let full = health_color(1.0);
+    // Half health should be yellowish
+    let half = health_color(0.5);
+    // Low health should be reddish
+    let low = health_color(0.1);
+
+    // Just verify they don't panic and produce distinct colors
+    assert_ne!(format!("{full:?}"), format!("{half:?}"));
+    assert_ne!(format!("{half:?}"), format!("{low:?}"));
+}
+
+#[test]
+fn health_bar_color_at_boundaries() {
+    use pecking_order::game::healthbar::health_color;
+
+    // Edge cases shouldn't panic
+    let _zero = health_color(0.0);
+    let _one = health_color(1.0);
+    let _mid = health_color(0.5);
+}

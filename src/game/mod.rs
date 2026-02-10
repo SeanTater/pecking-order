@@ -2,8 +2,12 @@
 
 mod camera;
 pub mod combat;
+#[cfg(debug_assertions)]
+mod dev;
 pub mod enemy;
+pub mod healthbar;
 pub mod juice;
+mod pause;
 pub mod player;
 pub mod tools;
 pub mod waves;
@@ -22,6 +26,7 @@ impl Plugin for GamePlugin {
             .add_message::<DamageEvent>()
             .add_systems(OnEnter(GameState::Playing), (setup_playing, waves::init_waves, tools::spawn_ground_items).chain())
             .add_systems(OnExit(GameState::Playing), waves::cleanup_waves)
+            .add_systems(OnEnter(GameState::Paused), pause::spawn_pause_overlay)
             .add_systems(
                 Update,
                 (
@@ -31,11 +36,25 @@ impl Plugin for GamePlugin {
                     combat::check_death,
                     (tools::bobble_items, tools::pickup_tool, tools::activate_tool, tools::pinecone_fly),
                     (juice::apply_hit_flash, juice::apply_knockback, juice::apply_screenshake, juice::update_death_particles),
-                    back_to_menu,
+                    (healthbar::spawn_healthbars, healthbar::update_healthbars),
                 )
                     .chain()
                     .run_if(in_state(GameState::Playing)),
+            )
+            .add_systems(
+                Update,
+                pause::toggle_pause.run_if(in_state(GameState::Playing).or(in_state(GameState::Paused))),
+            )
+            .add_systems(
+                Update,
+                pause::pause_menu_input.run_if(in_state(GameState::Paused)),
             );
+
+        #[cfg(debug_assertions)]
+        app.add_systems(
+            Update,
+            dev::dev_keybinds.run_if(in_state(GameState::Playing)),
+        );
     }
 }
 
@@ -91,13 +110,4 @@ fn setup_playing(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         DespawnOnExit(GameState::Playing),
     ));
-}
-
-fn back_to_menu(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
-    if keyboard.just_pressed(KeyCode::Escape) {
-        next_state.set(GameState::MainMenu);
-    }
 }
